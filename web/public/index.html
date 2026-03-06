@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remotely</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222636;
+      --border: #2e3248;
+      --accent: #4f6ef7;
+      --accent-hover: #6b86ff;
+      --text: #e8eaf6;
+      --text-dim: #7880a4;
+      --error: #f05555;
+      --success: #4caf82;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* ── Landing ── */
+    #landing {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 48px 40px 40px;
+      width: 380px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .subtitle {
+      color: var(--text-dim);
+      font-size: 14px;
+      margin-bottom: 28px;
+      margin-top: 4px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+
+    #keyInput {
+      width: 100%;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: 6px;
+      text-align: center;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.15s;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #keyInput::placeholder { color: var(--border); letter-spacing: 4px; }
+    #keyInput:focus { border-color: var(--accent); }
+
+    #connectBtn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    #connectBtn:hover:not(:disabled) { background: var(--accent-hover); }
+    #connectBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error-msg {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--error);
+      min-height: 18px;
+      text-align: center;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 28px 0 20px;
+    }
+
+    .download-heading {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+
+    .download-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .dl-btn {
+      display: block;
+      text-align: center;
+      padding: 9px 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .dl-btn:hover { border-color: var(--accent); background: var(--surface); }
+    .dl-btn .icon { display: block; font-size: 18px; margin-bottom: 3px; }
+
+    /* ── Viewer ── */
+    #viewer {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #remoteVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    /* Connecting overlay */
+    #connectingOverlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.85);
+      gap: 16px;
+      font-size: 15px;
+      color: var(--text-dim);
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Toolbar */
+    .viewer-toolbar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 44px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, transparent 100%);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    #viewer:hover .viewer-toolbar,
+    #viewer:fullscreen .viewer-toolbar { opacity: 1; }
+
+    .toolbar-key {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      color: rgba(255,255,255,0.6);
+      margin-right: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .toolbar-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 14px;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+      line-height: 1.4;
+    }
+
+    .toolbar-btn:hover { background: rgba(255,255,255,0.2); }
+    .toolbar-btn.active { background: var(--accent); border-color: var(--accent); }
+
+    .toolbar-spacer { flex: 1; }
+
+    .toolbar-latency {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      font-variant-numeric: tabular-nums;
+      min-width: 44px;
+      text-align: right;
+    }
+
+    .toolbar-btn.disconnect {
+      background: rgba(240,85,85,0.2);
+      border-color: rgba(240,85,85,0.3);
+    }
+
+    .toolbar-btn.disconnect:hover { background: rgba(240,85,85,0.45); }
+  </style>
+</head>
+<body>
+
+<!-- ── Landing ── -->
+<div id="landing">
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon">&#x1F5A5;</div>
+      <h1>Remotely</h1>
+    </div>
+    <p class="subtitle">Enter a session key to view a remote screen</p>
+
+    <label for="keyInput">Session key</label>
+    <input id="keyInput" type="text" placeholder="000-000-000" maxlength="11"
+           autocomplete="off" spellcheck="false" inputmode="numeric">
+    <button id="connectBtn" onclick="connect()">Connect</button>
+    <div class="error-msg" id="errorMsg"></div>
+
+    <hr class="divider">
+    <p class="download-heading">Share your screen — download agent</p>
+    <div class="download-grid">
+      <a href="#" class="dl-btn"><span class="icon">&#x1F4BB;</span>Windows</a>
+      <a href="#" class="dl-btn"><span class="icon">&#x1F34E;</span>macOS</a>
+      <a href="#" class="dl-btn"><span class="icon">&#x1F427;</span>Linux</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── Viewer ── -->
+<div id="viewer" style="display:none">
+  <video id="remoteVideo" autoplay playsinline></video>
+
+  <div id="connectingOverlay">
+    <div class="spinner"></div>
+    <span>Waiting for host video&hellip;</span>
+  </div>
+
+  <div class="viewer-toolbar">
+    <span class="toolbar-key" id="displayKey"></span>
+    <button class="toolbar-btn" id="fullscreenBtn" title="Toggle fullscreen" onclick="toggleFullscreen()">&#x26F6;</button>
+    <button class="toolbar-btn" id="clipboardBtn" title="Send clipboard to host" onclick="syncClipboard()">&#x1F4CB;</button>
+    <div class="toolbar-spacer"></div>
+    <span class="toolbar-latency" id="latencyDisplay">-- ms</span>
+    <button class="toolbar-btn disconnect" title="Disconnect" onclick="disconnect()">&#x2715; Disconnect</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// Derive signaling URL from current page; fall back to localhost for file:// opens
+const SIGNALING_URL = location.protocol === 'file:'
+  ? 'ws://localhost:3000'
+  : `ws${location.protocol === 'https:' ? 's' : ''}://${location.host}`;
+
+const ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+];
+
+let ws = null;
+let pc = null;
+let pingInterval = null;
+let pingStart = 0;
+
+const video = document.getElementById('remoteVideo');
+
+// ── Key formatting ────────────────────────────────────────────────
+
+function cleanKey(k) { return String(k).replace(/\D/g, ''); }
+
+function formatKey(k) {
+  const d = cleanKey(k);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0,3)}-${d.slice(3)}`;
+  return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6,9)}`;
+}
+
+document.getElementById('keyInput').addEventListener('input', function () {
+  const pos = this.selectionStart;
+  const raw = cleanKey(this.value);
+  const formatted = formatKey(raw);
+  this.value = formatted;
+  // Keep cursor roughly in place after re-formatting
+  this.setSelectionRange(Math.min(pos, formatted.length), Math.min(pos, formatted.length));
+});
+
+document.getElementById('keyInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') connect();
+});
+
+// ── UI helpers ────────────────────────────────────────────────────
+
+function showLanding(err) {
+  document.getElementById('viewer').style.display = 'none';
+  document.getElementById('landing').style.display = '';
+  document.getElementById('connectBtn').disabled = false;
+  document.getElementById('errorMsg').textContent = err || '';
+  teardownInput();
+}
+
+function showViewer(displayKey) {
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('viewer').style.display = '';
+  document.getElementById('displayKey').textContent = displayKey;
+  document.getElementById('connectingOverlay').style.display = '';
+  setupInput();
+}
+
+function hideConnectingOverlay() {
+  document.getElementById('connectingOverlay').style.display = 'none';
+}
+
+// ── WebSocket / signaling ─────────────────────────────────────────
+
+function sendWs(data) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(data));
+}
+
+function connect() {
+  const raw = cleanKey(document.getElementById('keyInput').value);
+  if (raw.length !== 9) {
+    document.getElementById('errorMsg').textContent = 'Enter a valid 9-digit session key.';
+    return;
+  }
+  document.getElementById('errorMsg').textContent = '';
+  document.getElementById('connectBtn').disabled = true;
+
+  ws = new WebSocket(SIGNALING_URL);
+
+  ws.onopen = () => sendWs({ type: 'viewer:join', key: raw });
+
+  ws.onmessage = async (evt) => {
+    let msg;
+    try { msg = JSON.parse(evt.data); } catch { return; }
+    await handleMessage(msg);
+  };
+
+  ws.onclose = () => {
+    stopPing();
+    const inViewer = document.getElementById('viewer').style.display !== 'none';
+    if (inViewer) {
+      showLanding('Connection to server lost.');
+    } else {
+      document.getElementById('errorMsg').textContent = 'Connection lost.';
+      document.getElementById('connectBtn').disabled = false;
+    }
+  };
+
+  ws.onerror = () => {
+    document.getElementById('errorMsg').textContent = 'Could not reach signaling server.';
+    document.getElementById('connectBtn').disabled = false;
+  };
+}
+
+async function handleMessage(msg) {
+  switch (msg.type) {
+    case 'viewer:joined':
+      showViewer(msg.displayKey);
+      startPing();
+      break;
+
+    case 'rtc:offer':
+      await handleOffer(msg.sdp);
+      break;
+
+    case 'rtc:ice':
+      if (pc && msg.candidate) {
+        try { await pc.addIceCandidate(new RTCIceCandidate(msg.candidate)); }
+        catch (e) { console.warn('[rtc] ICE error:', e.message); }
+      }
+      break;
+
+    case 'clipboard:sync':
+      if (msg.text) {
+        try { await navigator.clipboard.writeText(msg.text); }
+        catch (e) { console.warn('[clipboard] write failed:', e.message); }
+      }
+      break;
+
+    case 'session:ended':
+      closePc();
+      showLanding('The host ended the session.');
+      break;
+
+    case 'error':
+      showLanding(msg.message || 'Server error.');
+      break;
+
+    case 'pong':
+      document.getElementById('latencyDisplay').textContent = `${Date.now() - pingStart} ms`;
+      break;
+  }
+}
+
+async function handleOffer(sdp) {
+  pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+
+  pc.ontrack = (evt) => {
+    if (evt.streams && evt.streams[0]) {
+      video.srcObject = evt.streams[0];
+      video.play().catch(() => {});
+      hideConnectingOverlay();
+    }
+  };
+
+  pc.onicecandidate = ({ candidate }) => {
+    if (candidate) sendWs({ type: 'rtc:ice', candidate: candidate.toJSON() });
+  };
+
+  pc.onconnectionstatechange = () => {
+    if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) {
+      closePc();
+      showLanding('WebRTC connection lost.');
+    }
+  };
+
+  await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  sendWs({ type: 'rtc:answer', sdp: pc.localDescription });
+}
+
+function closePc() {
+  if (pc) { pc.close(); pc = null; }
+}
+
+function disconnect() {
+  closePc();
+  if (ws) { ws.close(); ws = null; }
+  stopPing();
+  showLanding();
+}
+
+// ── Ping / latency ────────────────────────────────────────────────
+
+function startPing() {
+  pingInterval = setInterval(() => {
+    pingStart = Date.now();
+    sendWs({ type: 'ping', ts: pingStart });
+  }, 2000);
+}
+
+function stopPing() {
+  clearInterval(pingInterval);
+  pingInterval = null;
+}
+
+// ── Input ─────────────────────────────────────────────────────────
+
+let inputBound = false;
+
+function setupInput() {
+  if (inputBound) return;
+  inputBound = true;
+  video.addEventListener('mousemove', onMouseMove);
+  video.addEventListener('mousedown', onMouseDown);
+  video.addEventListener('mouseup', onMouseUp);
+  video.addEventListener('dblclick', onDblClick);
+  video.addEventListener('wheel', onWheel, { passive: false });
+  video.addEventListener('contextmenu', onContextMenu);
+  document.addEventListener('keydown', onKeyDown);
+  document.addEventListener('keyup', onKeyUp);
+}
+
+function teardownInput() {
+  if (!inputBound) return;
+  inputBound = false;
+  video.removeEventListener('mousemove', onMouseMove);
+  video.removeEventListener('mousedown', onMouseDown);
+  video.removeEventListener('mouseup', onMouseUp);
+  video.removeEventListener('dblclick', onDblClick);
+  video.removeEventListener('wheel', onWheel);
+  video.removeEventListener('contextmenu', onContextMenu);
+  document.removeEventListener('keydown', onKeyDown);
+  document.removeEventListener('keyup', onKeyUp);
+}
+
+// Normalize mouse coords to [0,1] accounting for object-fit:contain letterboxing
+function normalizeCoords(e) {
+  const rect = video.getBoundingClientRect();
+  const vw = video.videoWidth || rect.width;
+  const vh = video.videoHeight || rect.height;
+  const elemAspect = rect.width / rect.height;
+  const vidAspect = vw / vh;
+
+  let cx, cy, cw, ch;
+  if (vidAspect > elemAspect) {
+    cw = rect.width; ch = rect.width / vidAspect;
+    cx = rect.left; cy = rect.top + (rect.height - ch) / 2;
+  } else {
+    ch = rect.height; cw = rect.height * vidAspect;
+    cy = rect.top; cx = rect.left + (rect.width - cw) / 2;
+  }
+
+  return {
+    x: Math.max(0, Math.min(1, (e.clientX - cx) / cw)),
+    y: Math.max(0, Math.min(1, (e.clientY - cy) / ch)),
+  };
+}
+
+function buttonName(e) {
+  if (e.button === 2) return 'right';
+  if (e.button === 1) return 'middle';
+  return 'left';
+}
+
+function sendInput(data) { sendWs(data); }
+
+function onMouseMove(e) {
+  const { x, y } = normalizeCoords(e);
+  sendInput({ type: 'input:mouse', action: 'move', x, y });
+}
+function onMouseDown(e) {
+  e.preventDefault();
+  const { x, y } = normalizeCoords(e);
+  sendInput({ type: 'input:mouse', action: 'down', x, y, button: buttonName(e) });
+}
+function onMouseUp(e) {
+  const { x, y } = normalizeCoords(e);
+  sendInput({ type: 'input:mouse', action: 'up', x, y, button: buttonName(e) });
+}
+function onDblClick(e) {
+  const { x, y } = normalizeCoords(e);
+  sendInput({ type: 'input:mouse', action: 'dblclick', x, y, button: buttonName(e) });
+}
+function onWheel(e) {
+  e.preventDefault();
+  const { x, y } = normalizeCoords(e);
+  sendInput({ type: 'input:scroll', x, y, deltaX: e.deltaX, deltaY: e.deltaY });
+}
+function onContextMenu(e) { e.preventDefault(); }
+
+// Keys the browser keeps (don't forward to host)
+const BROWSER_KEYS = new Set(['F5', 'F12']);
+
+function getModifiers(e) {
+  const m = [];
+  if (e.ctrlKey) m.push('ctrl');
+  if (e.altKey) m.push('alt');
+  if (e.shiftKey) m.push('shift');
+  if (e.metaKey) m.push('command');
+  return m;
+}
+
+function onKeyDown(e) {
+  if (BROWSER_KEYS.has(e.key)) return;
+  e.preventDefault();
+  sendInput({ type: 'input:keyboard', action: 'down', key: e.key, modifiers: getModifiers(e) });
+}
+function onKeyUp(e) {
+  if (BROWSER_KEYS.has(e.key)) return;
+  e.preventDefault();
+  sendInput({ type: 'input:keyboard', action: 'up', key: e.key, modifiers: getModifiers(e) });
+}
+
+// ── Toolbar actions ───────────────────────────────────────────────
+
+function toggleFullscreen() {
+  const el = document.getElementById('viewer');
+  if (!document.fullscreenElement) {
+    el.requestFullscreen().catch(e => console.error('Fullscreen error:', e));
+    document.getElementById('fullscreenBtn').classList.add('active');
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement) {
+    document.getElementById('fullscreenBtn').classList.remove('active');
+  }
+});
+
+async function syncClipboard() {
+  try {
+    const text = await navigator.clipboard.readText();
+    sendWs({ type: 'clipboard:sync', text });
+    const btn = document.getElementById('clipboardBtn');
+    btn.textContent = '&#x2713;';
+    setTimeout(() => { btn.innerHTML = '&#x1F4CB;'; }, 1200);
+  } catch (e) {
+    console.warn('[clipboard] read failed:', e.message);
+  }
+}
+</script>
+</body>
+</html>

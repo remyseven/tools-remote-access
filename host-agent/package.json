@@ -1,0 +1,24 @@
+{
+  "name": "remotely-agent",
+  "version": "1.0.0",
+  "description": "Remotely host agent — screen share via WebRTC",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js",
+    "build:win": "pkg . --target node18-win-x64 --output dist/Remotely-Setup.exe",
+    "build:mac": "pkg . --target node18-mac-x64 --output dist/Remotely-Mac",
+    "build:linux": "pkg . --target node18-linux-x64 --output dist/remotely-linux"
+  },
+  "pkg": {
+    "targets": ["node18-win-x64", "node18-mac-x64", "node18-linux-x64"],
+    "assets": []
+  },
+  "dependencies": {
+    "@jitsi/robotjs": "^0.6.0",
+    "wrtc": "^0.4.7",
+    "ws": "^8.17.1"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  }
+}
