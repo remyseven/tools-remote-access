@@ -43,9 +43,11 @@ Lightweight ad-hoc remote access (join.me / TeamViewer-style). No accounts, no i
 /server/
   server.js          WebSocket signaling server (session keys, SDP/ICE relay)
   package.json
+  setup.sh           One-time Ubuntu 24.04 deployment script
 
 /host-agent/
   agent.js           Native Node.js agent (FFmpeg capture, robotjs input injection)
+  Remotely.bat       Windows launcher (double-click to run)
   package.json
 
 /web/public/
@@ -77,33 +79,46 @@ The server also serves the viewer SPA at `http://localhost:3000`.
 
 ```bash
 cd host-agent && npm install
-node agent.js                                        # connects to localhost:3000
-node agent.js --server wss://your-server.com         # production
-node agent.js --quality 60 --fps 10                  # lower bandwidth
+node agent.js                                              # connects to wss://remote.logicnode.us
+node agent.js --server wss://your-server.com               # custom server
+node agent.js --quality 60 --fps 10                        # lower bandwidth
 ```
 
 On first run, the agent prints a session key like `284-731-095`. Share it with the viewer.
 
 ### Web viewer
 
-Open `http://localhost:3000` (or `web/public/index.html` directly) in a browser.
+Open `https://remote.logicnode.us` (or `http://localhost:3000` for local dev) in a browser.
 Enter the 9-digit key and click **Connect**.
 
 ---
 
-## Build distributable binaries
+## Build distributable (Windows)
 
-```bash
+The Windows distribution is a portable zip — `pkg` cannot load native `.node` binaries (robotjs, wrtc) from its virtual snapshot filesystem, so we bundle a portable `node.exe` instead.
+
+```powershell
 cd host-agent
-npm install -g pkg
 
-npm run build:win    # → dist/Remotely-Setup.exe
-npm run build:mac    # → dist/Remotely-Mac
-npm run build:linux  # → dist/remotely-linux
+# Download portable Node 18
+Invoke-WebRequest -Uri "https://nodejs.org/dist/v18.20.4/node-v18.20.4-win-x64.zip" -OutFile node18.zip
+Expand-Archive node18.zip -DestinationPath node18-tmp
+New-Item -ItemType Directory -Force dist | Out-Null
+Copy-Item node18-tmp\node-v18.20.4-win-x64\node.exe dist\node.exe
+Remove-Item -Recurse node18-tmp, node18.zip
+
+# Copy app files
+Copy-Item agent.js dist\
+Copy-Item Remotely.bat dist\
+Copy-Item -Recurse node_modules dist\
+
+# Zip
+Compress-Archive -Path dist\* -DestinationPath dist\Remotely-Windows.zip -Force
 ```
 
-> **Note:** FFmpeg must be installed separately on the host machine.
-> `node-webrtc` (`wrtc`) ships platform-specific native binaries — test each target OS build independently.
+Users extract the zip and double-click `Remotely.bat`. A terminal window stays open showing the session key.
+
+> **Note:** FFmpeg must be installed separately on the host machine (`winget install ffmpeg`).
 
 ---
 
