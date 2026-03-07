@@ -9,7 +9,7 @@ const robot = require('@jitsi/robotjs');
 
 function parseArgs() {
   const argv = process.argv.slice(2);
-  const result = { server: 'ws://localhost:3000', quality: 75, fps: 15 };
+  const result = { server: 'ws://74.179.84.48:3000', quality: 75, fps: 15 };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--server' && argv[i + 1]) result.server = argv[++i];
     else if (argv[i] === '--quality' && argv[i + 1]) result.quality = Math.max(1, Math.min(100, parseInt(argv[++i]) || 75));
