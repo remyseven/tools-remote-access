@@ -475,9 +475,12 @@ async function handleOffer(sdp) {
   pc.ontrack = (evt) => {
     if (evt.streams && evt.streams[0]) {
       video.srcObject = evt.streams[0];
-      video.play().catch(() => {});
-      hideConnectingOverlay();
+    } else {
+      if (!video.srcObject) video.srcObject = new MediaStream();
+      video.srcObject.addTrack(evt.track);
     }
+    video.play().catch(() => {});
+    hideConnectingOverlay();
   };
 
   pc.onicecandidate = ({ candidate }) => {

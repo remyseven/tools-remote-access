@@ -2,7 +2,7 @@
 
 const { spawn } = require('child_process');
 const WebSocket = require('ws');
-const { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, nonstandard: { RTCVideoSource } } = require('wrtc');
+const { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, MediaStream, nonstandard: { RTCVideoSource } } = require('wrtc');
 const robot = require('@jitsi/robotjs');
 
 // --- CLI args ---
@@ -114,13 +114,19 @@ async function startWebRTC() {
   peerConnection = new RTCPeerConnection({ iceServers: ICE_SERVERS });
   videoSource = new RTCVideoSource();
   const videoTrack = videoSource.createTrack();
-  peerConnection.addTrack(videoTrack);
+  const stream = new MediaStream([videoTrack]);
+  peerConnection.addTrack(videoTrack, stream);
 
   startCapture();
 
   peerConnection.onicecandidate = ({ candidate }) => {
     if (candidate) {
-      sendWs({ type: 'rtc:ice', candidate: candidate.toJSON() });
+      sendWs({ type: 'rtc:ice', candidate: {
+        candidate: candidate.candidate,
+        sdpMid: candidate.sdpMid,
+        sdpMLineIndex: candidate.sdpMLineIndex,
+        usernameFragment: candidate.usernameFragment,
+      }});
     }
   };
 
