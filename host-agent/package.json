@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Remotely host agent — screen share via WebRTC",
   "main": "agent.js",
+  "bin": "agent.js",
   "scripts": {
     "start": "node agent.js",
     "build:win": "pkg . --target node18-win-x64 --output dist/Remotely-Setup.exe",
