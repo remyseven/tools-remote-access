@@ -353,12 +353,23 @@ function formatKey(k) {
 }
 
 document.getElementById('keyInput').addEventListener('input', function () {
-  const pos = this.selectionStart;
-  const raw = cleanKey(this.value);
-  const formatted = formatKey(raw);
+  // Count digits before cursor (ignoring dashes) to survive reformatting
+  const digitsBeforeCursor = this.value.slice(0, this.selectionStart).replace(/\D/g, '').length;
+  const formatted = formatKey(cleanKey(this.value));
   this.value = formatted;
-  // Keep cursor roughly in place after re-formatting
-  this.setSelectionRange(Math.min(pos, formatted.length), Math.min(pos, formatted.length));
+
+  // Find where that many digits land in the newly formatted string
+  let newPos = formatted.length;
+  if (digitsBeforeCursor === 0) {
+    newPos = 0;
+  } else {
+    let count = 0;
+    for (let i = 0; i < formatted.length; i++) {
+      if (formatted[i] !== '-') count++;
+      if (count === digitsBeforeCursor) { newPos = i + 1; break; }
+    }
+  }
+  this.setSelectionRange(newPos, newPos);
 });
 
 document.getElementById('keyInput').addEventListener('keydown', function (e) {
