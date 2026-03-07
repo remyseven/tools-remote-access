@@ -262,9 +262,9 @@ function connect() {
 
     switch (msg.type) {
       case 'host:created': {
-        console.log('\n  ┌──────────────────────────┐');
+        console.log('\n  ┌─────────────────────────────┐');
         console.log(`  │  Session key: ${msg.displayKey}   │`);
-        console.log('  └──────────────────────────┘');
+        console.log('  └─────────────────────────────┘');
         console.log('  Share this key with the viewer.\n');
         break;
       }
@@ -290,7 +290,7 @@ function connect() {
       }
 
       case 'rtc:ice': {
-        if (!peerConnection || !msg.candidate) break;
+        if (!peerConnection || !msg.candidate || !msg.candidate.candidate) break;
         try {
           await peerConnection.addIceCandidate(new RTCIceCandidate(msg.candidate));
         } catch (err) {
