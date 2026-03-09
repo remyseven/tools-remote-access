@@ -13,8 +13,10 @@ func ffmpegArgs(fps, quality, w, h int) []string {
 		"-c:v", "libvpx",
 		"-quality", "realtime",
 		"-cpu-used", "8",
-		"-b:v", "1M",
+		"-b:v", "2M",
+		"-maxrate", "2M",
 		"-auto-alt-ref", "0",
+		"-g", fmt.Sprintf("%d", fps), // keyframe every 1 second — allows decoder to recover
 		"-crf", fmt.Sprintf("%d", 63-quality/2), // quality 1-100 → crf 62-13
 		"-f", "ivf",
 		"pipe:1",
