@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('crypto');
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
@@ -15,12 +16,15 @@ const rateLimitMap = new Map(); // ip -> { count, resetAt }
 // Sessions: key -> { host: WebSocket, viewers: Set<WebSocket>, createdAt: number }
 const sessions = new Map();
 
+// Max viewers allowed per session
+const MAX_VIEWERS_PER_SESSION = 10;
+
 // Stale session TTL: 8 hours
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
 function generateKey() {
   let key = '';
-  for (let i = 0; i < 9; i++) key += Math.floor(Math.random() * 10);
+  for (let i = 0; i < 9; i++) key += crypto.randomInt(0, 10);
   return key;
 }
 
@@ -99,12 +103,16 @@ const server = http.createServer((req, res) => {
   }
 });
 
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ server, maxPayload: 64 * 1024 }); // 64 KB max message
 
 wss.on('connection', (ws, req) => {
-  const ip =
-    req.headers['x-forwarded-for']?.split(',')[0].trim() ||
-    req.socket.remoteAddress;
+  // Use socket address when available (not loopback); otherwise take the
+  // rightmost x-forwarded-for entry (appended by the reverse proxy, not spoofable).
+  const socketIp = req.socket.remoteAddress;
+  const isLoopback = socketIp === '127.0.0.1' || socketIp === '::1' || socketIp === '::ffff:127.0.0.1';
+  const ip = isLoopback
+    ? (req.headers['x-forwarded-for']?.split(',').pop()?.trim() || socketIp)
+    : socketIp;
 
   ws._sessionKey = null;
   ws._role = null; // 'host' | 'viewer'
@@ -162,6 +170,11 @@ wss.on('connection', (ws, req) => {
         const session = sessions.get(key);
         if (!session) {
           send(ws, { type: 'error', code: 'not_found', message: 'Session not found.' });
+          return;
+        }
+
+        if (session.viewers.size >= MAX_VIEWERS_PER_SESSION) {
+          send(ws, { type: 'error', code: 'session_full', message: 'Session is full.' });
           return;
         }
 
