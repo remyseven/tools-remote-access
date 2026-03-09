@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"os/exec"
 	"time"
 
@@ -43,7 +44,7 @@ func startCapture(fps, quality int, track *webrtc.TrackLocalStaticSample) (cance
 	if err != nil {
 		return nil, fmt.Errorf("stdout pipe: %w", err)
 	}
-	cmd.Stderr = nil // suppress FFmpeg console output
+	cmd.Stderr = os.Stderr // show FFmpeg errors in terminal
 
 	if err := cmd.Start(); err != nil {
 		if isNotFound(err) {

@@ -9,11 +9,12 @@ func ffmpegArgs(fps, quality, w, h int) []string {
 		"-f", "gdigrab",
 		"-framerate", fmt.Sprintf("%d", fps),
 		"-i", "desktop",
-		"-vf", fmt.Sprintf("scale=%d:%d", w, h),
+		"-vf", fmt.Sprintf("scale=%d:%d,format=yuv420p", w, h),
 		"-c:v", "libvpx",
 		"-quality", "realtime",
 		"-cpu-used", "8",
 		"-b:v", "1M",
+		"-auto-alt-ref", "0",
 		"-crf", fmt.Sprintf("%d", 63-quality/2), // quality 1-100 → crf 62-13
 		"-f", "ivf",
 		"pipe:1",
